@@ -1,0 +1,5 @@
+Flask==3.0.0
+gunicorn
+google-cloud-storage
+google-cloud-logging
+google-cloud-pubsub

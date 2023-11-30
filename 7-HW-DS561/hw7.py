@@ -2,7 +2,7 @@ import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions
 import re
 
-FILE_PATTERN = 'gs://hw2-vm-bucket/webdir/[0-1].html'
+FILE_PATTERN = 'gs://hw2-vm-bucket/webdir/*.html'
 
 OUTPUT_FILE = 'gs://hw2-vm-bucket/main1.txt'
 

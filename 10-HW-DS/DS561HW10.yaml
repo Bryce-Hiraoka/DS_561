@@ -1,0 +1,113 @@
+resources:
+- name: file-server-sql
+  type: sqladmin.v1beta4.instance
+  properties:
+    name: file-server
+    instanceType: CLOUD_SQL_INSTANCE
+    region: us-east1
+    databaseVersion: MYSQL_8_0
+    settings:
+      tier: db-custom-4-15360
+      backupConfiguration:
+        enabled: true
+        startTime: 00:00
+      ipConfiguration:
+        ipv4Enabled: true
+      userLabels:
+        environment: production
+    project: ds-561-398918
+    rootPassword: Ryozo2011
+
+- name: database
+  type: sqladmin.v1beta4.database
+  properties:
+    name: file_server
+    instance: $(ref.file-server-sql.name)
+    project: ds-561-398918
+
+- type: gcp-types/pubsub-v1:projects.topics
+  name: pubsubTopic
+  properties:
+    topic: file_server_topic
+
+- type: gcp-types/pubsub-v1:projects.subscriptions
+  name: pubsubSubscription
+  properties:
+    subscription: file_server_topic-sub
+    topic: $(ref.pubsubTopic.name)
+
+- name: file-server-instance
+  type: compute.v1.instance
+  properties:
+    zone: us-east1-b
+    machineType: zones/us-east1-b/machineTypes/e2-micro
+    disks:
+    - deviceName: file-server
+      boot: true
+      autoDelete: true
+      initializeParams:
+        diskSizeGb: 10
+        sourceImage: projects/debian-cloud/global/images/debian-11-bullseye-v20231115
+    networkInterfaces:
+    - network: global/networks/default
+      accessConfigs:
+      - name: External NAT
+        type: ONE_TO_ONE_NAT
+    serviceAccounts:
+    - email: hw10-946@ds-561-398918.iam.gserviceaccount.com
+      scopes:
+      - https://www.googleapis.com/auth/cloud-platform
+      - https://www.googleapis.com/auth/logging.write
+      - https://www.googleapis.com/auth/devstorage.read_write
+      - https://www.googleapis.com/auth/pubsub
+    tags:
+      items:
+      - allow-8080
+    metadata:
+      items:
+      - key: startup-script
+        value: |
+          gsutil cp -r gs://hw10-ds .
+          cd hw10/
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip
+          pip3 install -r requirements.txt
+          python3 main.py
+
+- name: pubsub-instance
+  type: compute.v1.instance
+  properties:
+    zone: us-east1-b
+    machineType: zones/us-east1-b/machineTypes/e2-micro
+    disks:
+    - deviceName: file-server
+      boot: true
+      autoDelete: true
+      initializeParams:
+        diskSizeGb: 10
+        sourceImage: projects/debian-cloud/global/images/debian-11-bullseye-v20231115
+    networkInterfaces:
+    - network: global/networks/default
+      accessConfigs:
+      - name: External NAT
+        type: ONE_TO_ONE_NAT
+    serviceAccounts:
+    - email: hw10-946@ds-561-398918.iam.gserviceaccount.com
+      scopes:
+      - https://www.googleapis.com/auth/cloud-platform
+      - https://www.googleapis.com/auth/logging.write
+      - https://www.googleapis.com/auth/devstorage.read_write
+      - https://www.googleapis.com/auth/pubsub
+    tags:
+      items:
+      - allow-8080
+    metadata:
+      items:
+      - key: startup-script
+        value: |
+          gsutil cp -r gs://hw10-ds .
+          cd hw10/
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip
+          pip3 install -r requirements.txt
+          python3 track_requests.py
